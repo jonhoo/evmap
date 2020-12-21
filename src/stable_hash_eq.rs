@@ -8,7 +8,8 @@ mod sealed_hash_eq {
 
 macro_rules! stable_hash_eq {
     ($(
-        $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}$({$($manual_bounds:tt)*})?)? $Type:ty,
+        $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}
+        $({$($manual_bounds:tt)*})?)? $Type:ty,
     )*) => {
         stable_hash_eq!{#
             $(
@@ -23,7 +24,8 @@ macro_rules! stable_hash_eq {
         }
     };
     (#$(
-        $({$($a:lifetime)*$($T:ident$(:?Sized$Sized:ident)?)*}{$($where_bounds:tt)*}$({$($_t:tt)*})?)? $Type:ty,
+        $({$($a:lifetime)*$($T:ident$(:?Sized$Sized:ident)?)*}
+        {$($where_bounds:tt)*}$({$($_t:tt)*})?)? $Type:ty,
     )*) => {
         $(
             impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? StableHashEq for $Type
@@ -132,82 +134,36 @@ stable_hash_eq! {
     {Idx} RangeToInclusive<Idx>,
     {K, V} BTreeMap<K, V>,
     {P}{P: StableDeref, P::Target: StableHashEq} Pin<P>,
-    {Ret}{}                   fn() -> Ret,
-    {Ret}{} extern "C"        fn() -> Ret,
-    {Ret}{} unsafe            fn() -> Ret,
-    {Ret}{} unsafe extern "C" fn() -> Ret,
-    {Ret, A}{}                   fn(A) -> Ret,
-    {Ret, A}{} extern "C"        fn(A) -> Ret,
-    {Ret, A}{} extern "C"        fn(A, ...) -> Ret,
-    {Ret, A}{} unsafe            fn(A) -> Ret,
-    {Ret, A}{} unsafe extern "C" fn(A) -> Ret,
-    {Ret, A}{} unsafe extern "C" fn(A, ...) -> Ret,
-    {Ret, A, B}{}                   fn(A, B) -> Ret,
-    {Ret, A, B}{} extern "C"        fn(A, B) -> Ret,
-    {Ret, A, B}{} extern "C"        fn(A, B, ...) -> Ret,
-    {Ret, A, B}{} unsafe            fn(A, B) -> Ret,
-    {Ret, A, B}{} unsafe extern "C" fn(A, B) -> Ret,
-    {Ret, A, B}{} unsafe extern "C" fn(A, B, ...) -> Ret,
-    {Ret, A, B, C}{}                   fn(A, B, C) -> Ret,
-    {Ret, A, B, C}{} extern "C"        fn(A, B, C) -> Ret,
-    {Ret, A, B, C}{} extern "C"        fn(A, B, C, ...) -> Ret,
-    {Ret, A, B, C}{} unsafe            fn(A, B, C) -> Ret,
-    {Ret, A, B, C}{} unsafe extern "C" fn(A, B, C) -> Ret,
-    {Ret, A, B, C}{} unsafe extern "C" fn(A, B, C, ...) -> Ret,
-    {Ret, A, B, C, D}{}                   fn(A, B, C, D) -> Ret,
-    {Ret, A, B, C, D}{} extern "C"        fn(A, B, C, D) -> Ret,
-    {Ret, A, B, C, D}{} extern "C"        fn(A, B, C, D, ...) -> Ret,
-    {Ret, A, B, C, D}{} unsafe            fn(A, B, C, D) -> Ret,
-    {Ret, A, B, C, D}{} unsafe extern "C" fn(A, B, C, D) -> Ret,
-    {Ret, A, B, C, D}{} unsafe extern "C" fn(A, B, C, D, ...) -> Ret,
-    {Ret, A, B, C, D, E}{}                   fn(A, B, C, D, E) -> Ret,
-    {Ret, A, B, C, D, E}{} extern "C"        fn(A, B, C, D, E) -> Ret,
-    {Ret, A, B, C, D, E}{} extern "C"        fn(A, B, C, D, E, ...) -> Ret,
-    {Ret, A, B, C, D, E}{} unsafe            fn(A, B, C, D, E) -> Ret,
-    {Ret, A, B, C, D, E}{} unsafe extern "C" fn(A, B, C, D, E) -> Ret,
-    {Ret, A, B, C, D, E}{} unsafe extern "C" fn(A, B, C, D, E, ...) -> Ret,
-    {Ret, A, B, C, D, E, F}{}                   fn(A, B, C, D, E, F) -> Ret,
-    {Ret, A, B, C, D, E, F}{} extern "C"        fn(A, B, C, D, E, F) -> Ret,
-    {Ret, A, B, C, D, E, F}{} extern "C"        fn(A, B, C, D, E, F, ...) -> Ret,
-    {Ret, A, B, C, D, E, F}{} unsafe            fn(A, B, C, D, E, F) -> Ret,
-    {Ret, A, B, C, D, E, F}{} unsafe extern "C" fn(A, B, C, D, E, F) -> Ret,
-    {Ret, A, B, C, D, E, F}{} unsafe extern "C" fn(A, B, C, D, E, F, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G}{}                   fn(A, B, C, D, E, F, G) -> Ret,
-    {Ret, A, B, C, D, E, F, G}{} extern "C"        fn(A, B, C, D, E, F, G) -> Ret,
-    {Ret, A, B, C, D, E, F, G}{} extern "C"        fn(A, B, C, D, E, F, G, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G}{} unsafe            fn(A, B, C, D, E, F, G) -> Ret,
-    {Ret, A, B, C, D, E, F, G}{} unsafe extern "C" fn(A, B, C, D, E, F, G) -> Ret,
-    {Ret, A, B, C, D, E, F, G}{} unsafe extern "C" fn(A, B, C, D, E, F, G, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H}{}                   fn(A, B, C, D, E, F, G, H) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H}{} extern "C"        fn(A, B, C, D, E, F, G, H) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H}{} extern "C"        fn(A, B, C, D, E, F, G, H, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H}{} unsafe            fn(A, B, C, D, E, F, G, H) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I}{}                   fn(A, B, C, D, E, F, G, H, I) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I}{} extern "C"        fn(A, B, C, D, E, F, G, H, I) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I}{} unsafe            fn(A, B, C, D, E, F, G, H, I) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J}{}                   fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J}{} unsafe            fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K}{}                   fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} unsafe            fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{}                   fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K, L, ...) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} unsafe            fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
-    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K, L, ...) -> Ret,
+}
+macro_rules! stable_hash_eq_fn {
+    ($({$($($A:ident),+)?})*) => {
+        stable_hash_eq!{
+            $(
+                {Ret$(, $($A),+)?}{} fn($($($A),+)?) -> Ret,
+                {Ret$(, $($A),+)?}{} extern "C" fn($($($A),+)?) -> Ret,
+                $({Ret, $($A),+}{} extern "C" fn($($A),+, ...) -> Ret,)?
+                {Ret$(, $($A),+)?}{} unsafe extern "C" fn($($($A),+)?) -> Ret,
+                $({Ret, $($A),+}{} unsafe extern "C" fn($($A),+, ...) -> Ret,)?
+            )*
+        }
+    };
+}
+stable_hash_eq_fn! {
+    {}
+    {A}
+    {A, B}
+    {A, B, C}
+    {A, B, C, D}
+    {A, B, C, D, E}
+    {A, B, C, D, E, F}
+    {A, B, C, D, E, F, G}
+    {A, B, C, D, E, F, G, H}
+    {A, B, C, D, E, F, G, H, I}
+    {A, B, C, D, E, F, G, H, I, J}
+    {A, B, C, D, E, F, G, H, I, J, K}
+    {A, B, C, D, E, F, G, H, I, J, K, L}
+}
+stable_hash_eq! {
     {T} Bound<T>,
     {T} Option<T>,
     {T} Poll<T>,
@@ -245,7 +201,8 @@ mod sealed_deref {
 
 macro_rules! stable_deref {
     ($(
-        $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}$({$($manual_bounds:tt)*})?)? $Type:ty,
+        $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}
+        $({$($manual_bounds:tt)*})?)? $Type:ty,
     )*) => {
         stable_deref!{#
             $(
@@ -258,7 +215,8 @@ macro_rules! stable_deref {
         }
     };
     (#$(
-        $({$($a:lifetime)*$($T:ident$(:?Sized$Sized:ident)?)*}{$($where_bounds:tt)*}$({$($_t:tt)*})?)? $Type:ty,
+        $({$($a:lifetime)*$($T:ident$(:?Sized$Sized:ident)?)*}
+        {$($where_bounds:tt)*}$({$($_t:tt)*})?)? $Type:ty,
     )*) => {
         $(
             impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? StableDeref for $Type
