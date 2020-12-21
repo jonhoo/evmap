@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/jonhoo/jonhoo/_apis/build/status/evmap?branchName=master)](https://dev.azure.com/jonhoo/jonhoo/_build/latest?definitionId=30&branchName=master)
+[![Codecov](https://codecov.io/github/jonhoo/evmap/coverage.svg?branch=master)](https://codecov.io/gh/jonhoo/evmap)
 [![Crates.io](https://img.shields.io/crates/v/evmap.svg)](https://crates.io/crates/evmap)
 [![Documentation](https://docs.rs/evmap/badge.svg)](https://docs.rs/evmap/)
 

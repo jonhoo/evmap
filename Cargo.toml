@@ -12,8 +12,8 @@ keywords = ["map","multi-value","lock-free"]
 categories = ["concurrency", "data-structures"]
 
 [badges]
-azure-devops = { project = "jonhoo/jonhoo", pipeline = "evmap", build = "8" }
-codecov = { repository = "jonhoo/rust-evmap", branch = "master", service = "github" }
+azure-devops = { project = "jonhoo/jonhoo", pipeline = "evmap", build = "30" }
+codecov = { repository = "jonhoo/evmap", branch = "master", service = "github" }
 maintenance = { status = "passively-maintained" }
 
 [features]
