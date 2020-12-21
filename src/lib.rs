@@ -225,7 +225,7 @@ mod stable_hash_eq;
 mod values;
 mod write;
 
-pub use stable_hash_eq::{StableHashEq, StableDeref};
+pub use stable_hash_eq::{StableDeref, StableHashEq};
 
 /// Handles to the read and write halves of an `evmap`.
 pub mod handles {
