@@ -1,15 +1,12 @@
-use std::hash::Hash;
 /// Types from the standard library that are known to implement `Hash` and `Eq`
 /// deterministically.
 pub trait StableHashEq: Hash + Eq + sealed::Sealed {}
 
 macro_rules! stable_hash_eq {
-    ({$($imports:tt)*}
-    $(
+    ($(
         $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}$({$($manual_bounds:tt)*})?)? $Type:ty,
     )*) => {
         stable_hash_eq!{#
-            {$($imports)*}
             $(
                 $({$($a)*$($T$(:?$Sized$Sized)?)*})? $($({$($manual_bounds)*})?
                 {
@@ -21,18 +18,15 @@ macro_rules! stable_hash_eq {
             )*
         }
     };
-    (#{$($imports:tt)*}
-    $(
+    (#$(
         $({$($a:lifetime)*$($T:ident$(:?Sized$Sized:ident)?)*}{$($where_bounds:tt)*}$({$($_t:tt)*})?)? $Type:ty,
     )*) => {
-        $($imports)*
         $(
             impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? StableHashEq for $Type
             $($($where_bounds)*)? {}
         )*
         mod sealed {
-            $($imports)*
-            use super::StableHashEq;
+            use super::*;
             pub trait Sealed {}
             $(
                 impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? Sealed for $Type
@@ -42,37 +36,187 @@ macro_rules! stable_hash_eq {
     };
 }
 
+use std::{
+    any::TypeId,
+    cmp::{self, Reverse},
+    collections::{BTreeMap, BTreeSet, LinkedList, VecDeque},
+    convert::Infallible,
+    ffi::{CStr, CString, OsStr, OsString},
+    fmt,
+    fs::FileType,
+    hash::Hash,
+    io::ErrorKind,
+    marker::{PhantomData, PhantomPinned},
+    mem::{Discriminant, ManuallyDrop},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
+    num::{
+        NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
+        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
+    },
+    ops::{Bound, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    path::{Component, Path, PathBuf, Prefix, PrefixComponent},
+    ptr::NonNull,
+    rc::Rc,
+    sync::{atomic, Arc},
+    task::Poll,
+    thread::ThreadId,
+    time::{Duration, Instant, SystemTime},
+};
 stable_hash_eq! {
-    {
-        use std::collections::{BTreeMap, BTreeSet, VecDeque};
-    }
-    u8, u16, u32, u64, u128, usize,
-    i8, i16, i32, i64, i128, isize,
-    bool, char, String,
-    {'a, T} &'a [T],
-    {'a, T: ?Sized} &'a T,
-    {'a} &'a str,
-    {T} Vec<T>,
-    {T} VecDeque<T>,
-    {T} BTreeSet<T>,
-    {K, V} BTreeMap<K, V>,
+    cmp::Ordering,
+    Infallible,
+    ErrorKind,
+    IpAddr,
+    SocketAddr,
+    atomic::Ordering,
+    bool, char,
+    i8, i16, i32, i64, i128,
+    isize,
+    str,
+    u8, u16, u32, u64, u128,
     (),
-    {T1: ?Sized} (T1,),
-    {T1, T2: ?Sized} (T1, T2),
-    {T1, T2, T3: ?Sized} (T1, T2, T3),
-    {T1, T2, T3, T4: ?Sized} (T1, T2, T3, T4),
-    {T1, T2, T3, T4, T5: ?Sized} (T1, T2, T3, T4, T5),
-    {T1, T2, T3, T4, T5, T6: ?Sized} (T1, T2, T3, T4, T5, T6),
-    {T1, T2, T3, T4, T5, T6, T7: ?Sized} (T1, T2, T3, T4, T5, T6, T7),
-    {T1, T2, T3, T4, T5, T6, T7, T8: ?Sized} (T1, T2, T3, T4, T5, T6, T7, T8),
-    {T1, T2, T3, T4, T5, T6, T7, T8, T9: ?Sized}
-    (T1, T2, T3, T4, T5, T6, T7, T8, T9),
-    {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10: ?Sized}
-    (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10),
-    {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11: ?Sized}
-    (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11),
-    {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12: ?Sized}
-    (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12),
+    usize,
+    TypeId,
+    CStr,
+    CString,
+    OsStr,
+    OsString,
+    fmt::Error,
+    FileType,
+    PhantomPinned,
+    Ipv4Addr,
+    Ipv6Addr,
+    SocketAddrV4,
+    SocketAddrV6,
+    NonZeroI8, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI128, NonZeroIsize,
+    NonZeroU8, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU128, NonZeroUsize,
+    RangeFull,
+    Path,
+    PathBuf,
+    String,
+    ThreadId,
+    Duration,
+    Instant,
+    SystemTime,
+    {'a} PrefixComponent<'a>,
+    {'a, T: ?Sized} &'a T,
+    {'a, T: ?Sized} &'a mut T,
+    {'a} Component<'a>,
+    {'a} Prefix<'a>,
+    {A: ?Sized} (A,),
+    {T} VecDeque<T>,
+    {A, B: ?Sized} (A, B),
+    {A, B, C: ?Sized} (A, B, C),
+    {A, B, C, D: ?Sized} (A, B, C, D),
+    {A, B, C, D, E: ?Sized} (A, B, C, D, E),
+    {A, B, C, D, E, F: ?Sized} (A, B, C, D, E, F),
+    {A, B, C, D, E, F, G: ?Sized} (A, B, C, D, E, F, G),
+    {A, B, C, D, E, F, G, H: ?Sized} (A, B, C, D, E, F, G, H),
+    {A, B, C, D, E, F, G, H, I: ?Sized} (A, B, C, D, E, F, G, H, I),
+    {A, B, C, D, E, F, G, H, I, J: ?Sized} (A, B, C, D, E, F, G, H, I, J),
+    {A, B, C, D, E, F, G, H, I, J, K: ?Sized} (A, B, C, D, E, F, G, H, I, J, K),
+    {A, B, C, D, E, F, G, H, I, J, K, L: ?Sized} (A, B, C, D, E, F, G, H, I, J, K, L),
+    {Idx} Range<Idx>,
+    {Idx} RangeFrom<Idx>,
+    {Idx} RangeInclusive<Idx>,
+    {Idx} RangeTo<Idx>,
+    {Idx} RangeToInclusive<Idx>,
+    {K, V} BTreeMap<K, V>,
+    {Ret}{}                   fn() -> Ret,
+    {Ret}{} extern "C"        fn() -> Ret,
+    {Ret}{} unsafe            fn() -> Ret,
+    {Ret}{} unsafe extern "C" fn() -> Ret,
+    {Ret, A}{}                   fn(A) -> Ret,
+    {Ret, A}{} extern "C"        fn(A) -> Ret,
+    {Ret, A}{} extern "C"        fn(A, ...) -> Ret,
+    {Ret, A}{} unsafe            fn(A) -> Ret,
+    {Ret, A}{} unsafe extern "C" fn(A) -> Ret,
+    {Ret, A}{} unsafe extern "C" fn(A, ...) -> Ret,
+    {Ret, A, B}{}                   fn(A, B) -> Ret,
+    {Ret, A, B}{} extern "C"        fn(A, B) -> Ret,
+    {Ret, A, B}{} extern "C"        fn(A, B, ...) -> Ret,
+    {Ret, A, B}{} unsafe            fn(A, B) -> Ret,
+    {Ret, A, B}{} unsafe extern "C" fn(A, B) -> Ret,
+    {Ret, A, B}{} unsafe extern "C" fn(A, B, ...) -> Ret,
+    {Ret, A, B, C}{}                   fn(A, B, C) -> Ret,
+    {Ret, A, B, C}{} extern "C"        fn(A, B, C) -> Ret,
+    {Ret, A, B, C}{} extern "C"        fn(A, B, C, ...) -> Ret,
+    {Ret, A, B, C}{} unsafe            fn(A, B, C) -> Ret,
+    {Ret, A, B, C}{} unsafe extern "C" fn(A, B, C) -> Ret,
+    {Ret, A, B, C}{} unsafe extern "C" fn(A, B, C, ...) -> Ret,
+    {Ret, A, B, C, D}{}                   fn(A, B, C, D) -> Ret,
+    {Ret, A, B, C, D}{} extern "C"        fn(A, B, C, D) -> Ret,
+    {Ret, A, B, C, D}{} extern "C"        fn(A, B, C, D, ...) -> Ret,
+    {Ret, A, B, C, D}{} unsafe            fn(A, B, C, D) -> Ret,
+    {Ret, A, B, C, D}{} unsafe extern "C" fn(A, B, C, D) -> Ret,
+    {Ret, A, B, C, D}{} unsafe extern "C" fn(A, B, C, D, ...) -> Ret,
+    {Ret, A, B, C, D, E}{}                   fn(A, B, C, D, E) -> Ret,
+    {Ret, A, B, C, D, E}{} extern "C"        fn(A, B, C, D, E) -> Ret,
+    {Ret, A, B, C, D, E}{} extern "C"        fn(A, B, C, D, E, ...) -> Ret,
+    {Ret, A, B, C, D, E}{} unsafe            fn(A, B, C, D, E) -> Ret,
+    {Ret, A, B, C, D, E}{} unsafe extern "C" fn(A, B, C, D, E) -> Ret,
+    {Ret, A, B, C, D, E}{} unsafe extern "C" fn(A, B, C, D, E, ...) -> Ret,
+    {Ret, A, B, C, D, E, F}{}                   fn(A, B, C, D, E, F) -> Ret,
+    {Ret, A, B, C, D, E, F}{} extern "C"        fn(A, B, C, D, E, F) -> Ret,
+    {Ret, A, B, C, D, E, F}{} extern "C"        fn(A, B, C, D, E, F, ...) -> Ret,
+    {Ret, A, B, C, D, E, F}{} unsafe            fn(A, B, C, D, E, F) -> Ret,
+    {Ret, A, B, C, D, E, F}{} unsafe extern "C" fn(A, B, C, D, E, F) -> Ret,
+    {Ret, A, B, C, D, E, F}{} unsafe extern "C" fn(A, B, C, D, E, F, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G}{}                   fn(A, B, C, D, E, F, G) -> Ret,
+    {Ret, A, B, C, D, E, F, G}{} extern "C"        fn(A, B, C, D, E, F, G) -> Ret,
+    {Ret, A, B, C, D, E, F, G}{} extern "C"        fn(A, B, C, D, E, F, G, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G}{} unsafe            fn(A, B, C, D, E, F, G) -> Ret,
+    {Ret, A, B, C, D, E, F, G}{} unsafe extern "C" fn(A, B, C, D, E, F, G) -> Ret,
+    {Ret, A, B, C, D, E, F, G}{} unsafe extern "C" fn(A, B, C, D, E, F, G, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H}{}                   fn(A, B, C, D, E, F, G, H) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H}{} extern "C"        fn(A, B, C, D, E, F, G, H) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H}{} extern "C"        fn(A, B, C, D, E, F, G, H, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H}{} unsafe            fn(A, B, C, D, E, F, G, H) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I}{}                   fn(A, B, C, D, E, F, G, H, I) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I}{} extern "C"        fn(A, B, C, D, E, F, G, H, I) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I}{} unsafe            fn(A, B, C, D, E, F, G, H, I) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J}{}                   fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J}{} unsafe            fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K}{}                   fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} unsafe            fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{}                   fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} extern "C"        fn(A, B, C, D, E, F, G, H, I, J, K, L, ...) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} unsafe            fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K, L) -> Ret,
+    {Ret, A, B, C, D, E, F, G, H, I, J, K, L}{} unsafe extern "C" fn(A, B, C, D, E, F, G, H, I, J, K, L, ...) -> Ret,
+    {T} Bound<T>,
+    {T} Option<T>,
+    {T} Poll<T>,
+    {T: ?Sized}{} *const T,
+    {T: ?Sized}{} *mut T,
+    {T} [T],
+    {T: ?Sized} Box<T>,
+    {T} Reverse<T>,
+    {T} BTreeSet<T>,
+    {T} LinkedList<T>,
+    {T: ?Sized}{} PhantomData<T>,
+    {T}{} Discriminant<T>,
+    {T} ManuallyDrop<T>,
+    {T} Wrapping<T>,
+    {T: ?Sized}{} NonNull<T>,
+    {T: ?Sized} Rc<T>,
+    {T: ?Sized} Arc<T>,
+    {T} Vec<T>,
+    {T, E} Result<T, E>,
     {T} [T; 0], {T} [T; 1], {T} [T; 2], {T} [T; 3], {T} [T; 4],
     {T} [T; 5], {T} [T; 6], {T} [T; 7], {T} [T; 8], {T} [T; 9],
     {T} [T; 10], {T} [T; 11], {T} [T; 12], {T} [T; 13], {T} [T; 14],

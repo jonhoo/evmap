@@ -221,9 +221,9 @@ use std::hash::{BuildHasher, Hash};
 
 mod inner;
 mod read;
+mod stable_hash_eq;
 mod values;
 mod write;
-mod stable_hash_eq;
 
 pub use stable_hash_eq::StableHashEq;
 
