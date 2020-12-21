@@ -2,6 +2,10 @@
 /// deterministically.
 pub trait StableHashEq: Hash + Eq + sealed::Sealed {}
 
+mod sealed {
+    pub trait Sealed {}
+}
+
 macro_rules! stable_hash_eq {
     ($(
         $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}$({$($manual_bounds:tt)*})?)? $Type:ty,
@@ -24,15 +28,9 @@ macro_rules! stable_hash_eq {
         $(
             impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? StableHashEq for $Type
             $($($where_bounds)*)? {}
+            impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? sealed::Sealed for $Type
+            $($($where_bounds)*)? {}
         )*
-        mod sealed {
-            use super::*;
-            pub trait Sealed {}
-            $(
-                impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? Sealed for $Type
-                $($($where_bounds)*)? {}
-            )*
-        }
     };
 }
 
