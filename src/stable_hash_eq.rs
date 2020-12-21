@@ -142,6 +142,7 @@ macro_rules! stable_hash_eq_fn {
                 {Ret$(, $($A),+)?}{} fn($($($A),+)?) -> Ret,
                 {Ret$(, $($A),+)?}{} extern "C" fn($($($A),+)?) -> Ret,
                 $({Ret, $($A),+}{} extern "C" fn($($A),+, ...) -> Ret,)?
+                {Ret$(, $($A),+)?}{} unsafe fn($($($A),+)?) -> Ret,
                 {Ret$(, $($A),+)?}{} unsafe extern "C" fn($($($A),+)?) -> Ret,
                 $({Ret, $($A),+}{} unsafe extern "C" fn($($A),+, ...) -> Ret,)?
             )*
