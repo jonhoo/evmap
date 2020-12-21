@@ -1,5 +1,5 @@
-/// Types from the standard library that are known to implement `Hash` and `Eq`
-/// deterministically.
+/// Sealed trait for types in [`std`] that are known to implement
+/// `Hash` and `Eq` deterministically.
 pub trait StableHashEq: Hash + Eq + sealed_hash_eq::Sealed {}
 
 mod sealed_hash_eq {
@@ -236,8 +236,8 @@ stable_hash_eq! {
     {T} [T; 30], {T} [T; 31], {T} [T; 32],
 }
 
-/// Types from the standard library that are known to implement `Deref`
-/// deterministically.
+/// Sealed trait for types in [`std`] that are known to implement
+/// `Deref` deterministically.
 pub trait StableDeref: Deref + sealed_deref::Sealed {}
 mod sealed_deref {
     pub trait Sealed {}
