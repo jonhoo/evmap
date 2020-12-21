@@ -326,7 +326,7 @@ where
 
     /// Create the map, and construct the read and write handles used to access it.
     ///
-    /// If you want to use arbitrary types for the keys and values, use [`assert_stable`].
+    /// If you want to use arbitrary types for the keys and values, use [`assert_stable`][Options::assert_stable].
     #[allow(clippy::type_complexity)]
     pub fn construct<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
@@ -411,8 +411,8 @@ where
 /// # Safety
 ///
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
-/// `V`, and the implementation of `Hasher` for `S` are deterministic. That is, they must always
-/// yield the same result if given the same inputs.
+/// `V`, and the implementation of `BuildHasher` for `S` its corresponding [`Hasher`][std::hash::Hasher]
+/// are deterministic. That is, they must always yield the same result if given the same inputs.
 #[allow(clippy::type_complexity)]
 pub unsafe fn with_hasher<K, V, M, S>(
     meta: M,
@@ -430,6 +430,8 @@ where
         .assert_stable()
 }
 
+/// Types from the standard library that are known to implement `Hash` and `Eq`
+/// deterministically.
 pub trait StableHashEq: Hash + Eq + sealed::Sealed {}
 
 macro_rules! stable_hash_eq {
