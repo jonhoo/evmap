@@ -34,3 +34,7 @@ left-right = { version = "0.11.0" }
 quickcheck = "0.9"
 quickcheck_macros = "0.9"
 rand = "0.7"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
