@@ -330,9 +330,9 @@ where
     #[allow(clippy::type_complexity)]
     pub fn construct<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
-        K: sealed::StableHashEq + Eq + Hash + Clone,
+        K: StableHashEq + Clone,
         S: BuildHasher + Clone,
-        V: sealed::StableHashEq + Eq + Hash,
+        V: StableHashEq,
         M: 'static + Clone,
     {
         unsafe { self.assert_stable() }
@@ -377,8 +377,8 @@ pub fn new<K, V>() -> (
     ReadHandle<K, V, (), RandomState>,
 )
 where
-    K: sealed::StableHashEq + Eq + Hash + Clone,
-    V: sealed::StableHashEq + Eq + Hash,
+    K: StableHashEq + Clone,
+    V: StableHashEq,
 {
     Options::default().construct()
 }
@@ -430,64 +430,69 @@ where
         .assert_stable()
 }
 
-mod sealed {
-    #[allow(unreachable_pub)]
-    pub unsafe trait StableHashEq: std::hash::Hash + Eq {}
+pub trait StableHashEq: Hash + Eq + sealed::Sealed {}
 
-    macro_rules! yes_its_stable {
-        ($($t:ty),*) => {
-            $(unsafe impl StableHashEq for $t {})*
-        };
-    }
-
-    yes_its_stable!(u8, u16, u32, u64, u128, usize);
-    yes_its_stable!(i8, i16, i32, i64, i128, isize);
-    yes_its_stable!(bool, char, String);
-
-    unsafe impl<'a, T: StableHashEq> StableHashEq for &'a [T] {}
-    unsafe impl<'a, T: StableHashEq> StableHashEq for &'a T {}
-    unsafe impl<'a> StableHashEq for &'a str {}
-
-    use std::collections::{BTreeMap, BTreeSet, VecDeque};
-    unsafe impl<T: StableHashEq> StableHashEq for Vec<T> {}
-    unsafe impl<T: StableHashEq> StableHashEq for VecDeque<T> {}
-    unsafe impl<T: StableHashEq> StableHashEq for BTreeSet<T> {}
-    unsafe impl<K, V> StableHashEq for BTreeMap<K, V>
-    where
-        K: StableHashEq,
-        V: StableHashEq,
-    {
-    }
-
-    unsafe impl StableHashEq for () {}
-    unsafe impl<T1> StableHashEq for (T1,) where T1: StableHashEq {}
-    unsafe impl<T1, T2> StableHashEq for (T1, T2)
-    where
-        T1: StableHashEq,
-        T2: StableHashEq,
-    {
-    }
-    unsafe impl<T1, T2, T3> StableHashEq for (T1, T2, T3)
-    where
-        T1: StableHashEq,
-        T2: StableHashEq,
-        T3: StableHashEq,
-    {
-    }
-    unsafe impl<T1, T2, T3, T4> StableHashEq for (T1, T2, T3, T4)
-    where
-        T1: StableHashEq,
-        T2: StableHashEq,
-        T3: StableHashEq,
-        T4: StableHashEq,
-    {
-    }
-
-    macro_rules! arr {
-        ($($n:literal),*) => {
-            $(unsafe impl<T: StableHashEq> StableHashEq for [T; $n] {})*
+macro_rules! stable_hash_eq {
+    ({$($imports:tt)*}
+    $(
+        $({$($a:lifetime),*$(,)?$($T:ident),*})? $Type:ty,
+    )*) => {
+        $($imports)*
+        $(
+            impl$(<$($a,)*$($T,)*>)? StableHashEq for $Type
+            $(where $(
+                $T: StableHashEq,
+            )*)? {}
+        )*
+        mod sealed {
+            $($imports)*
+            use super::StableHashEq;
+            pub trait Sealed {}
+            $(
+                impl$(<$($a,)*$($T,)*>)? Sealed for $Type
+                $(where $(
+                    $T: StableHashEq,
+                )*)? {}
+            )*
         }
     }
+}
 
-    arr!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+stable_hash_eq! {
+    {
+        use std::collections::{BTreeMap, BTreeSet, VecDeque};
+    }
+    u8, u16, u32, u64, u128, usize,
+    i8, i16, i32, i64, i128, isize,
+    bool, char, String,
+    {'a, T} &'a [T],
+    {'a, T} &'a T,
+    {'a} &'a str,
+    {T} Vec<T>,
+    {T} VecDeque<T>,
+    {T} BTreeSet<T>,
+    {K, V} BTreeMap<K, V>,
+    (),
+    {T1} (T1,),
+    {T1, T2} (T1, T2),
+    {T1, T2, T3} (T1, T2, T3),
+    {T1, T2, T3, T4} (T1, T2, T3, T4),
+    {T1, T2, T3, T4, T5} (T1, T2, T3, T4, T5),
+    {T1, T2, T3, T4, T5, T6} (T1, T2, T3, T4, T5, T6),
+    {T1, T2, T3, T4, T5, T6, T7} (T1, T2, T3, T4, T5, T6, T7),
+    {T1, T2, T3, T4, T5, T6, T7, T8} (T1, T2, T3, T4, T5, T6, T7, T8),
+    {T1, T2, T3, T4, T5, T6, T7, T8, T9} (T1, T2, T3, T4, T5, T6, T7, T8, T9),
+    {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10}
+    (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10),
+    {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11}
+    (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11),
+    {T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12}
+    (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12),
+    {T} [T; 0], {T} [T; 1], {T} [T; 2], {T} [T; 3], {T} [T; 4],
+    {T} [T; 5], {T} [T; 6], {T} [T; 7], {T} [T; 8], {T} [T; 9],
+    {T} [T; 10], {T} [T; 11], {T} [T; 12], {T} [T; 13], {T} [T; 14],
+    {T} [T; 15], {T} [T; 16], {T} [T; 17], {T} [T; 18], {T} [T; 19],
+    {T} [T; 20], {T} [T; 21], {T} [T; 22], {T} [T; 23], {T} [T; 24],
+    {T} [T; 25], {T} [T; 26], {T} [T; 27], {T} [T; 28], {T} [T; 29],
+    {T} [T; 30], {T} [T; 31], {T} [T; 32],
 }
