@@ -226,7 +226,8 @@ fn operations_i8(ops: Large<Vec<Op<i8, i8>>>) -> bool {
 
 #[quickcheck]
 fn operations_string(ops: Vec<Op<Alphabet, i8>>) -> bool {
-    let (mut w, r) = evmap::new();
+    // safety: Alphabet is just String, and has stable Hash + Eq.
+    let (mut w, r) = unsafe { evmap::new_assert_stable() };
     let mut write_ref = HashMap::new();
     let mut read_ref = HashMap::new();
     do_ops(&ops, &mut w, &mut write_ref, &mut read_ref);

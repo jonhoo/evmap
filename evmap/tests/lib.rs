@@ -554,7 +554,9 @@ fn replace_post_refresh() {
 
 #[test]
 fn with_meta() {
-    let (mut w, r) = evmap::with_meta::<usize, usize, _>(42);
+    let (mut w, r) = evmap::Options::default()
+        .with_meta(42)
+        .construct::<usize, usize>();
     assert_eq!(
         r.meta_get(&1).map(|(rs, m)| (rs.map(|rs| rs.len()), m)),
         None

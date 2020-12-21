@@ -299,7 +299,12 @@ where
     }
 
     /// Set the hasher used for the map.
-    pub fn with_hasher<S2>(self, hash_builder: S2) -> Options<M, S2>
+    ///
+    /// # Safety
+    ///
+    /// This method is safe to call as long as the given hasher is deterministic. That is, it must
+    /// yield the same hash if given the same sequence of inputs.
+    pub unsafe fn with_hasher<S2>(self, hash_builder: S2) -> Options<M, S2>
     where
         S2: BuildHasher,
     {
@@ -320,8 +325,28 @@ where
     }
 
     /// Create the map, and construct the read and write handles used to access it.
+    ///
+    /// If you want to use arbitrary types for the keys and values, use [`assert_stable`].
     #[allow(clippy::type_complexity)]
     pub fn construct<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
+    where
+        K: sealed::StableHashEq + Eq + Hash + Clone,
+        S: BuildHasher + Clone,
+        V: sealed::StableHashEq + Eq + Hash,
+        M: 'static + Clone,
+    {
+        unsafe { self.assert_stable() }
+    }
+
+    /// Create the map, and construct the read and write handles used to access it.
+    ///
+    /// # Safety
+    ///
+    /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K`
+    /// and `V` are deterministic. That is, they must always yield the same result if given the
+    /// same inputs.
+    #[allow(clippy::type_complexity)]
+    pub unsafe fn assert_stable<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
         K: Eq + Hash + Clone,
         S: BuildHasher + Clone,
@@ -344,8 +369,31 @@ where
 /// Create an empty eventually consistent map.
 ///
 /// Use the [`Options`](./struct.Options.html) builder for more control over initialization.
+///
+/// If you want to use arbitrary types for the keys and values, use [`new_assert_stable`].
 #[allow(clippy::type_complexity)]
 pub fn new<K, V>() -> (
+    WriteHandle<K, V, (), RandomState>,
+    ReadHandle<K, V, (), RandomState>,
+)
+where
+    K: sealed::StableHashEq + Eq + Hash + Clone,
+    V: sealed::StableHashEq + Eq + Hash,
+{
+    Options::default().construct()
+}
+
+/// Create an empty eventually consistent map.
+///
+/// Use the [`Options`](./struct.Options.html) builder for more control over initialization.
+///
+/// # Safety
+///
+/// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
+/// `V` are deterministic. That is, they must always yield the same result if given the same
+/// inputs.
+#[allow(clippy::type_complexity)]
+pub unsafe fn new_assert_stable<K, V>() -> (
     WriteHandle<K, V, (), RandomState>,
     ReadHandle<K, V, (), RandomState>,
 )
@@ -353,32 +401,20 @@ where
     K: Eq + Hash + Clone,
     V: Eq + Hash,
 {
-    Options::default().construct()
-}
-
-/// Create an empty eventually consistent map with meta information.
-///
-/// Use the [`Options`](./struct.Options.html) builder for more control over initialization.
-#[allow(clippy::type_complexity)]
-pub fn with_meta<K, V, M>(
-    meta: M,
-) -> (
-    WriteHandle<K, V, M, RandomState>,
-    ReadHandle<K, V, M, RandomState>,
-)
-where
-    K: Eq + Hash + Clone,
-    V: Eq + Hash,
-    M: 'static + Clone,
-{
-    Options::default().with_meta(meta).construct()
+    Options::default().assert_stable()
 }
 
 /// Create an empty eventually consistent map with meta information and custom hasher.
 ///
 /// Use the [`Options`](./struct.Options.html) builder for more control over initialization.
+///
+/// # Safety
+///
+/// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
+/// `V`, and the implementation of `Hasher` for `S` are deterministic. That is, they must always
+/// yield the same result if given the same inputs.
 #[allow(clippy::type_complexity)]
-pub fn with_hasher<K, V, M, S>(
+pub unsafe fn with_hasher<K, V, M, S>(
     meta: M,
     hasher: S,
 ) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
@@ -391,5 +427,67 @@ where
     Options::default()
         .with_hasher(hasher)
         .with_meta(meta)
-        .construct()
+        .assert_stable()
+}
+
+mod sealed {
+    #[allow(unreachable_pub)]
+    pub unsafe trait StableHashEq: std::hash::Hash + Eq {}
+
+    macro_rules! yes_its_stable {
+        ($($t:ty),*) => {
+            $(unsafe impl StableHashEq for $t {})*
+        };
+    }
+
+    yes_its_stable!(u8, u16, u32, u64, u128, usize);
+    yes_its_stable!(i8, i16, i32, i64, i128, isize);
+    yes_its_stable!(bool, char, String);
+
+    unsafe impl<'a, T: StableHashEq> StableHashEq for &'a [T] {}
+    unsafe impl<'a, T: StableHashEq> StableHashEq for &'a T {}
+    unsafe impl<'a> StableHashEq for &'a str {}
+
+    use std::collections::{BTreeMap, BTreeSet, VecDeque};
+    unsafe impl<T: StableHashEq> StableHashEq for Vec<T> {}
+    unsafe impl<T: StableHashEq> StableHashEq for VecDeque<T> {}
+    unsafe impl<T: StableHashEq> StableHashEq for BTreeSet<T> {}
+    unsafe impl<K, V> StableHashEq for BTreeMap<K, V>
+    where
+        K: StableHashEq,
+        V: StableHashEq,
+    {
+    }
+
+    unsafe impl StableHashEq for () {}
+    unsafe impl<T1> StableHashEq for (T1,) where T1: StableHashEq {}
+    unsafe impl<T1, T2> StableHashEq for (T1, T2)
+    where
+        T1: StableHashEq,
+        T2: StableHashEq,
+    {
+    }
+    unsafe impl<T1, T2, T3> StableHashEq for (T1, T2, T3)
+    where
+        T1: StableHashEq,
+        T2: StableHashEq,
+        T3: StableHashEq,
+    {
+    }
+    unsafe impl<T1, T2, T3, T4> StableHashEq for (T1, T2, T3, T4)
+    where
+        T1: StableHashEq,
+        T2: StableHashEq,
+        T3: StableHashEq,
+        T4: StableHashEq,
+    {
+    }
+
+    macro_rules! arr {
+        ($($n:literal),*) => {
+            $(unsafe impl<T: StableHashEq> StableHashEq for [T; $n] {})*
+        }
+    }
+
+    arr!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 }
