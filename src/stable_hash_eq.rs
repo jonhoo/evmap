@@ -1,8 +1,8 @@
 /// Types from the standard library that are known to implement `Hash` and `Eq`
 /// deterministically.
-pub trait StableHashEq: Hash + Eq + sealed::Sealed {}
+pub trait StableHashEq: Hash + Eq + sealed_hash_eq::Sealed {}
 
-mod sealed {
+mod sealed_hash_eq {
     pub trait Sealed {}
 }
 
@@ -12,7 +12,7 @@ macro_rules! stable_hash_eq {
     )*) => {
         stable_hash_eq!{#
             $(
-                $({$($a)*$($T$(:?$Sized$Sized)?)*})? $($({$($manual_bounds)*})?
+                $({$($a)*$($T$(:?$Sized$Sized)?)*})? $($({where $($manual_bounds)*})?
                 {
                     where $(
                         $T: StableHashEq,
@@ -28,7 +28,7 @@ macro_rules! stable_hash_eq {
         $(
             impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? StableHashEq for $Type
             $($($where_bounds)*)? {}
-            impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? sealed::Sealed for $Type
+            impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? sealed_hash_eq::Sealed for $Type
             $($($where_bounds)*)? {}
         )*
     };
@@ -36,14 +36,16 @@ macro_rules! stable_hash_eq {
 
 use std::{
     any::TypeId,
+    borrow::Cow,
+    cell::{Ref, RefMut},
     cmp::{self, Reverse},
-    collections::{BTreeMap, BTreeSet, LinkedList, VecDeque},
+    collections::{binary_heap::PeekMut, BTreeMap, BTreeSet, LinkedList, VecDeque},
     convert::Infallible,
     ffi::{CStr, CString, OsStr, OsString},
     fmt,
     fs::FileType,
     hash::Hash,
-    io::ErrorKind,
+    io::{ErrorKind, IoSlice, IoSliceMut},
     marker::{PhantomData, PhantomPinned},
     mem::{Discriminant, ManuallyDrop},
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
@@ -51,15 +53,18 @@ use std::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
     },
-    ops::{Bound, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    ops::{Bound, Deref, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    panic::AssertUnwindSafe,
     path::{Component, Path, PathBuf, Prefix, PrefixComponent},
+    pin::Pin,
     ptr::NonNull,
     rc::Rc,
-    sync::{atomic, Arc},
+    sync::{atomic, Arc, MutexGuard, RwLockReadGuard, RwLockWriteGuard},
     task::Poll,
     thread::ThreadId,
     time::{Duration, Instant, SystemTime},
 };
+
 stable_hash_eq! {
     cmp::Ordering,
     Infallible,
@@ -97,6 +102,12 @@ stable_hash_eq! {
     Instant,
     SystemTime,
     {'a} PrefixComponent<'a>,
+    {'a} Cow<'a, str>,
+    {'a} Cow<'a, CStr>,
+    {'a} Cow<'a, OsStr>,
+    {'a} Cow<'a, Path>,
+    {'a, T}{T: Clone + StableHashEq} Cow<'_, [T]>,
+    {'a, T}{T: Clone + StableHashEq} Cow<'_, T>,
     {'a, T: ?Sized} &'a T,
     {'a, T: ?Sized} &'a mut T,
     {'a} Component<'a>,
@@ -120,6 +131,7 @@ stable_hash_eq! {
     {Idx} RangeTo<Idx>,
     {Idx} RangeToInclusive<Idx>,
     {K, V} BTreeMap<K, V>,
+    {P}{P: StableDeref, P::Target: StableHashEq} Pin<P>,
     {Ret}{}                   fn() -> Ret,
     {Ret}{} extern "C"        fn() -> Ret,
     {Ret}{} unsafe            fn() -> Ret,
@@ -222,4 +234,68 @@ stable_hash_eq! {
     {T} [T; 20], {T} [T; 21], {T} [T; 22], {T} [T; 23], {T} [T; 24],
     {T} [T; 25], {T} [T; 26], {T} [T; 27], {T} [T; 28], {T} [T; 29],
     {T} [T; 30], {T} [T; 31], {T} [T; 32],
+}
+
+/// Types from the standard library that are known to implement `Deref`
+/// deterministically.
+pub trait StableDeref: Deref + sealed_deref::Sealed {}
+mod sealed_deref {
+    pub trait Sealed {}
+}
+
+macro_rules! stable_deref {
+    ($(
+        $({$($a:lifetime),*$(,)?$($T:ident$(:?$Sized:ident)?),*$(,)?}$({$($manual_bounds:tt)*})?)? $Type:ty,
+    )*) => {
+        stable_deref!{#
+            $(
+                $({$($a)*$($T$(:?$Sized$Sized)?)*})? $($({where $($manual_bounds)*})?
+                {
+                    /* without default constraints, unlike stable_hash_eq macro */
+                })?
+                $Type,
+            )*
+        }
+    };
+    (#$(
+        $({$($a:lifetime)*$($T:ident$(:?Sized$Sized:ident)?)*}{$($where_bounds:tt)*}$({$($_t:tt)*})?)? $Type:ty,
+    )*) => {
+        $(
+            impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? StableDeref for $Type
+            $($($where_bounds)*)? {}
+            impl$(<$($a,)*$($T$(:?$Sized)?,)*>)? sealed_deref::Sealed for $Type
+            $($($where_bounds)*)? {}
+        )*
+    };
+}
+
+stable_deref! {
+    CString,
+    OsString,
+    PathBuf,
+    String,
+    {'a} Cow<'a, str>,
+    {'a} Cow<'a, CStr>,
+    {'a} Cow<'a, OsStr>,
+    {'a} Cow<'a, Path>,
+    {'a, T}{T: Clone} Cow<'a, [T]>,
+    {'a, T}{T: Clone} Cow<'a, T>,
+    {'a, T: ?Sized} &'a T,
+    {'a, T: ?Sized} &'a mut T,
+    {'a, T: ?Sized} Ref<'a, T>,
+    {'a, T: ?Sized} RefMut<'a, T>,
+    // the `Ord` impl is not used when dereferencing PeekMut
+    {'a, T}{T: Ord} PeekMut<'a, T>,
+    {'a} IoSlice<'a>,
+    {'a} IoSliceMut<'a>,
+    {P}{P: StableDeref} Pin<P>,
+    {T: ?Sized} Box<T>,
+    {T: ?Sized} ManuallyDrop<T>,
+    {T} AssertUnwindSafe<T>,
+    {T: ?Sized} Rc<T>,
+    {T: ?Sized} Arc<T>,
+    {T} Vec<T>,
+    {'a, T: ?Sized} MutexGuard<'a, T>,
+    {'a, T: ?Sized} RwLockReadGuard<'a, T>,
+    {'a, T: ?Sized} RwLockWriteGuard<'a, T>,
 }
