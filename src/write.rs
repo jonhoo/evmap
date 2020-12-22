@@ -242,6 +242,7 @@ where
     }
 
     #[cfg(feature = "eviction")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "eviction")))]
     /// Remove the value-bag for `n` randomly chosen keys.
     ///
     /// This method immediately calls [`publish`](Self::publish) to ensure that the keys and values

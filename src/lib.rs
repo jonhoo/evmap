@@ -210,6 +210,7 @@
 // This _should_ detect if we ever accidentally leak aliasing::NoDrop.
 // But, currently, it does not..
 #![deny(unreachable_pub)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 use crate::inner::Inner;
 use crate::read::ReadHandle;
