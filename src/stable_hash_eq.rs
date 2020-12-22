@@ -1,5 +1,9 @@
 /// Sealed trait for types in [`std`] that are known to implement
 /// `Hash` and `Eq` deterministically.
+///
+/// Furthermore, if `T: Clone + StableHashEq`, then `T::clone` is
+/// deterministic too, in the sense that the behavior with regards
+/// to `Hash` and `Eq` methods stays consistent between both clones.
 pub trait StableHashEq: Hash + Eq + sealed_hash_eq::Sealed {}
 
 mod sealed_hash_eq {

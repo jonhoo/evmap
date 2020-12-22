@@ -309,7 +309,7 @@ where
     /// yield the same hash if given the same sequence of inputs.
     pub unsafe fn with_hasher<S2>(self, hash_builder: S2) -> Options<M, S2>
     where
-        S2: BuildHasher,
+        S2: BuildHasher + Clone,
     {
         Options {
             meta: self.meta,
@@ -347,7 +347,7 @@ where
     ///
     /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K`
     /// and `V` are deterministic. That is, they must always yield the same result if given the
-    /// same inputs.
+    /// same inputs. For keys of type `K`, this must hold even between different clones of the key.
     #[allow(clippy::type_complexity)]
     pub unsafe fn assert_stable<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
@@ -394,7 +394,7 @@ where
 ///
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
 /// `V` are deterministic. That is, they must always yield the same result if given the same
-/// inputs.
+/// inputs. For keys of type `K`, this must hold even between different clones of the key.
 #[allow(clippy::type_complexity)]
 pub unsafe fn new_assert_stable<K, V>() -> (
     WriteHandle<K, V, (), RandomState>,
@@ -416,6 +416,7 @@ where
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
 /// `V`, and the implementation of `BuildHasher` for `S` its corresponding [`Hasher`][std::hash::Hasher]
 /// are deterministic. That is, they must always yield the same result if given the same inputs.
+/// For keys of type `K`, this must hold even between different clones of the key.
 #[allow(clippy::type_complexity)]
 pub unsafe fn with_hasher<K, V, M, S>(
     meta: M,
