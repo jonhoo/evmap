@@ -414,9 +414,10 @@ where
 /// # Safety
 ///
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
-/// `V`, and the implementation of `BuildHasher` for `S` its corresponding [`Hasher`][std::hash::Hasher]
-/// are deterministic. That is, they must always yield the same result if given the same inputs.
-/// For keys of type `K`, this must hold even between different clones of the key.
+/// `V`, and the implementation of `BuildHasher` for `S` and [`Hasher`][std::hash::Hasher]
+/// for <code>S::[Hasher][BuildHasher::Hasher]</code> are deterministic. That is, they must always
+/// yield the same result if given the same inputs. For keys of type `K` and hashers of type `S`,
+/// their behavior must also be consistent between different clones of the same value.
 #[allow(clippy::type_complexity)]
 pub unsafe fn with_hasher<K, V, M, S>(
     meta: M,
