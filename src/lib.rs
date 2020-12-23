@@ -347,7 +347,8 @@ where
     ///
     /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K`
     /// and `V` are deterministic. That is, they must always yield the same result if given the
-    /// same inputs. For keys of type `K`, this must hold even between different clones of the key.
+    /// same inputs. For keys of type `K`, the result must also be consistent between different clones
+    /// of the same key.
     #[allow(clippy::type_complexity)]
     pub unsafe fn assert_stable<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
@@ -394,7 +395,8 @@ where
 ///
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
 /// `V` are deterministic. That is, they must always yield the same result if given the same
-/// inputs. For keys of type `K`, this must hold even between different clones of the key.
+/// inputs. For keys of type `K`, the result must also be consistent between different clones
+/// of the same key.
 #[allow(clippy::type_complexity)]
 pub unsafe fn new_assert_stable<K, V>() -> (
     WriteHandle<K, V, (), RandomState>,
