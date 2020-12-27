@@ -5,6 +5,8 @@
 /// deterministic too, in the sense that the behavior with regards
 /// to `Hash` and `Eq` methods stays consistent between both clones.
 ///
+/// _This trait is sealed and cannot be implemented outside of the `evmap` crate._
+///
 /// [Sealed]: https://rust-lang.github.io/api-guidelines/future-proofing.html#sealed-traits-protect-against-downstream-implementations-c-sealed
 pub trait StableHashEq: Hash + Eq + sealed_hash_eq::Sealed {}
 
