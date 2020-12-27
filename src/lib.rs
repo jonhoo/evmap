@@ -222,8 +222,11 @@ use std::hash::{BuildHasher, Hash};
 
 mod inner;
 mod read;
+mod stable_hash_eq;
 mod values;
 mod write;
+
+pub use stable_hash_eq::StableHashEq;
 
 /// Handles to the read and write halves of an `evmap`.
 pub mod handles {
@@ -307,7 +310,7 @@ where
     /// yield the same hash if given the same sequence of inputs.
     pub unsafe fn with_hasher<S2>(self, hash_builder: S2) -> Options<M, S2>
     where
-        S2: BuildHasher,
+        S2: BuildHasher + Clone,
     {
         Options {
             meta: self.meta,
@@ -327,13 +330,13 @@ where
 
     /// Create the map, and construct the read and write handles used to access it.
     ///
-    /// If you want to use arbitrary types for the keys and values, use [`assert_stable`].
+    /// If you want to use arbitrary types for the keys and values, use [`assert_stable`][Options::assert_stable].
     #[allow(clippy::type_complexity)]
     pub fn construct<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
-        K: sealed::StableHashEq + Eq + Hash + Clone,
+        K: StableHashEq + Clone,
         S: BuildHasher + Clone,
-        V: sealed::StableHashEq + Eq + Hash,
+        V: StableHashEq,
         M: 'static + Clone,
     {
         unsafe { self.assert_stable() }
@@ -345,7 +348,8 @@ where
     ///
     /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K`
     /// and `V` are deterministic. That is, they must always yield the same result if given the
-    /// same inputs.
+    /// same inputs. For keys of type `K`, the result must also be consistent between different clones
+    /// of the same key.
     #[allow(clippy::type_complexity)]
     pub unsafe fn assert_stable<K, V>(self) -> (WriteHandle<K, V, M, S>, ReadHandle<K, V, M, S>)
     where
@@ -378,8 +382,8 @@ pub fn new<K, V>() -> (
     ReadHandle<K, V, (), RandomState>,
 )
 where
-    K: sealed::StableHashEq + Eq + Hash + Clone,
-    V: sealed::StableHashEq + Eq + Hash,
+    K: StableHashEq + Clone,
+    V: StableHashEq,
 {
     Options::default().construct()
 }
@@ -392,7 +396,8 @@ where
 ///
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
 /// `V` are deterministic. That is, they must always yield the same result if given the same
-/// inputs.
+/// inputs. For keys of type `K`, the result must also be consistent between different clones
+/// of the same key.
 #[allow(clippy::type_complexity)]
 pub unsafe fn new_assert_stable<K, V>() -> (
     WriteHandle<K, V, (), RandomState>,
@@ -412,8 +417,10 @@ where
 /// # Safety
 ///
 /// This method is safe to call as long as the implementation of `Hash` and `Eq` for both `K` and
-/// `V`, and the implementation of `Hasher` for `S` are deterministic. That is, they must always
-/// yield the same result if given the same inputs.
+/// `V`, and the implementation of `BuildHasher` for `S` and [`Hasher`][std::hash::Hasher]
+/// for <code>S::[Hasher][BuildHasher::Hasher]</code> are deterministic. That is, they must always
+/// yield the same result if given the same inputs. For keys of type `K` and hashers of type `S`,
+/// their behavior must also be consistent between different clones of the same value.
 #[allow(clippy::type_complexity)]
 pub unsafe fn with_hasher<K, V, M, S>(
     meta: M,
@@ -429,66 +436,4 @@ where
         .with_hasher(hasher)
         .with_meta(meta)
         .assert_stable()
-}
-
-mod sealed {
-    #[allow(unreachable_pub)]
-    pub unsafe trait StableHashEq: std::hash::Hash + Eq {}
-
-    macro_rules! yes_its_stable {
-        ($($t:ty),*) => {
-            $(unsafe impl StableHashEq for $t {})*
-        };
-    }
-
-    yes_its_stable!(u8, u16, u32, u64, u128, usize);
-    yes_its_stable!(i8, i16, i32, i64, i128, isize);
-    yes_its_stable!(bool, char, String);
-
-    unsafe impl<'a, T: StableHashEq> StableHashEq for &'a [T] {}
-    unsafe impl<'a, T: StableHashEq> StableHashEq for &'a T {}
-    unsafe impl<'a> StableHashEq for &'a str {}
-
-    use std::collections::{BTreeMap, BTreeSet, VecDeque};
-    unsafe impl<T: StableHashEq> StableHashEq for Vec<T> {}
-    unsafe impl<T: StableHashEq> StableHashEq for VecDeque<T> {}
-    unsafe impl<T: StableHashEq> StableHashEq for BTreeSet<T> {}
-    unsafe impl<K, V> StableHashEq for BTreeMap<K, V>
-    where
-        K: StableHashEq,
-        V: StableHashEq,
-    {
-    }
-
-    unsafe impl StableHashEq for () {}
-    unsafe impl<T1> StableHashEq for (T1,) where T1: StableHashEq {}
-    unsafe impl<T1, T2> StableHashEq for (T1, T2)
-    where
-        T1: StableHashEq,
-        T2: StableHashEq,
-    {
-    }
-    unsafe impl<T1, T2, T3> StableHashEq for (T1, T2, T3)
-    where
-        T1: StableHashEq,
-        T2: StableHashEq,
-        T3: StableHashEq,
-    {
-    }
-    unsafe impl<T1, T2, T3, T4> StableHashEq for (T1, T2, T3, T4)
-    where
-        T1: StableHashEq,
-        T2: StableHashEq,
-        T3: StableHashEq,
-        T4: StableHashEq,
-    {
-    }
-
-    macro_rules! arr {
-        ($($n:literal),*) => {
-            $(unsafe impl<T: StableHashEq> StableHashEq for [T; $n] {})*
-        }
-    }
-
-    arr!(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 }
