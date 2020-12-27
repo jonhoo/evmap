@@ -1,9 +1,11 @@
-/// Sealed trait for types in [`std`] that are known to implement
+/// [Sealed] trait for types in [`std`] that are known to implement
 /// `Hash` and `Eq` deterministically.
 ///
 /// Furthermore, if `T: Clone + StableHashEq`, then `T::clone` is
 /// deterministic too, in the sense that the behavior with regards
 /// to `Hash` and `Eq` methods stays consistent between both clones.
+///
+/// [Sealed]: https://rust-lang.github.io/api-guidelines/future-proofing.html#sealed-traits-protect-against-downstream-implementations-c-sealed
 pub trait StableHashEq: Hash + Eq + sealed_hash_eq::Sealed {}
 
 mod sealed_hash_eq {
