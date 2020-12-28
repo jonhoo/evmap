@@ -280,7 +280,7 @@ where
         // we need to sort the indices so that, later, we can make sure to swap remove from last to
         // first (and so not accidentally remove the wrong index).
         let mut to_remove = indices.clone().into_vec();
-        to_remove.sort();
+        to_remove.sort_unstable();
         self.add_op(Operation::EmptyAt(to_remove));
 
         indices.into_iter().map(move |i| {
