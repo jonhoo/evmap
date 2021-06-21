@@ -289,3 +289,36 @@ where
         self.iter.next().map(|(_, v)| v.as_ref())
     }
 }
+
+#[cfg(feature = "serde")]
+impl<T, S> serde::Serialize for Values<T, S>
+where
+    T: serde::Serialize,
+{
+    fn serialize<SER>(&self, serializer: SER) -> Result<SER::Ok, SER::Error>
+    where
+        SER: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.len()))?;
+        for e in self {
+            serde::ser::SerializeSeq::serialize_element(&mut seq, e)?;
+        }
+        serde::ser::SerializeSeq::end(seq)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'rh, K, V, M, S> serde::Serialize for MapReadRef<'rh, K, V, M, S>
+where
+    K: Hash + Eq + serde::Serialize,
+    V: Eq + Hash + serde::Serialize,
+    S: BuildHasher,
+{
+    #[inline]
+    fn serialize<SER>(&self, serializer: SER) -> Result<SER::Ok, SER::Error>
+    where
+        SER: serde::Serializer,
+    {
+        serializer.collect_map(self)
+    }
+}
