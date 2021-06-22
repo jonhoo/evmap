@@ -36,9 +36,9 @@ where
     Long(hashbag::HashBag<Aliased<T, D>, S>),
 }
 
-impl<T, S> Into<Values<T, S>> for ValuesInner<T, S, crate::aliasing::NoDrop> {
-    fn into(self) -> Values<T, S> {
-        Values(self)
+impl<T, S> From<ValuesInner<T, S, crate::aliasing::NoDrop>> for Values<T, S> {
+    fn from(v: ValuesInner<T, S, crate::aliasing::NoDrop>) -> Self {
+        Values(v)
     }
 }
 
@@ -346,10 +346,7 @@ where
     ) -> Self {
         match &other {
             ValuesInner::Short(s) => {
-                use std::iter::FromIterator;
-                ValuesInner::Short(smallvec::SmallVec::from_iter(
-                    s.iter().map(|v| v.alias().change_drop()),
-                ))
+                ValuesInner::Short(s.iter().map(|v| v.alias().change_drop()).collect())
             }
             ValuesInner::Long(l) => {
                 let mut long = hashbag::HashBag::with_hasher(hasher.clone());
