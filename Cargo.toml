@@ -18,7 +18,7 @@ eviction = ["indexed", "rand"]
 amortize = ["indexmap-amortized", "hashbag/amortize"]
 
 [dependencies]
-indexmap = { version = "1.6.1", optional = true }
+indexmap = { version = "2.12.0", optional = true }
 indexmap-amortized = { version = "1.6.1", optional = true }
 smallvec = "1.0.0"
 hashbag = "0.1.3"
