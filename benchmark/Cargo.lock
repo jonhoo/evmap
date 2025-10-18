@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "evmap"
-version = "11.0.0-alpha.8"
+version = "11.0.0"
 dependencies = [
  "hashbag",
  "left-right",
