@@ -64,6 +64,7 @@ dependencies = [
 name = "evmap"
 version = "11.0.0-alpha.8"
 dependencies = [
+ "getrandom 0.1.16",
  "hashbag",
  "indexmap",
  "indexmap-amortized",
