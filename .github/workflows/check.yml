@@ -150,4 +150,4 @@ jobs:
           toolchain: stable
       - name: cargo check
         working-directory: benchmark
-        run: cargo check
+        run: cargo check --locked
