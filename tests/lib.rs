@@ -441,7 +441,7 @@ fn empty_random() {
     w.insert(1, "b");
     w.insert(2, "c");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let removed: Vec<_> = w.empty_random(&mut rng, 1).map(|(&k, _)| k).collect();
     w.publish();
 
@@ -470,7 +470,7 @@ fn empty_random_multiple() {
     w.insert(1, "b");
     w.insert(2, "c");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let removed1: Vec<_> = w.empty_random(&mut rng, 1).map(|(&k, _)| k).collect();
     let removed2: Vec<_> = w.empty_random(&mut rng, 1).map(|(&k, _)| k).collect();
     w.publish();
