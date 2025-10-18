@@ -120,7 +120,7 @@ jobs:
     # https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
     strategy:
       matrix:
-        msrv: ["1.56.1"] # 2021 edition requires 1.56
+        msrv: ["1.48.0"]
     name: ubuntu / ${{ matrix.msrv }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5.0.0
@@ -131,4 +131,19 @@ jobs:
         with:
           toolchain: ${{ matrix.msrv }}
       - name: cargo +${{ matrix.msrv }} check
+        run: cargo check
+  benchmark:
+    # check that benchmark/ workspace compiles
+    runs-on: ubuntu-latest
+    name: ubuntu / benchmark / stable
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # tag=v5.0.0
+        with:
+          submodules: true
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # branch=master
+        with:
+          toolchain: stable
+      - name: cargo check
+        working-directory: benchmark
         run: cargo check

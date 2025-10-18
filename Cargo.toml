@@ -11,11 +11,6 @@ repository = "https://github.com/jonhoo/evmap.git"
 keywords = ["map","multi-value","lock-free"]
 categories = ["concurrency", "data-structures"]
 
-[badges]
-azure-devops = { project = "jonhoo/jonhoo", pipeline = "evmap", build = "30" }
-codecov = { repository = "jonhoo/evmap", branch = "master", service = "github" }
-maintenance = { status = "passively-maintained" }
-
 [features]
 default = []
 indexed = ["indexmap"]
