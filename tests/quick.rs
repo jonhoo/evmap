@@ -11,7 +11,6 @@ extern crate quickcheck_macros;
 use quickcheck::Arbitrary;
 use quickcheck::Gen;
 
-use rand::Rng;
 use std::cmp::{min, Ord};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -80,8 +79,8 @@ where
     K: Arbitrary,
     V: Arbitrary,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        match g.gen::<u32>() % 4 {
+    fn arbitrary(g: &mut Gen) -> Self {
+        match u32::arbitrary(g) % 4 {
             0 => Add(K::arbitrary(g), V::arbitrary(g)),
             1 => Remove(K::arbitrary(g)),
             2 => RemoveValue(K::arbitrary(g), V::arbitrary(g)),
@@ -174,8 +173,8 @@ impl<T> Arbitrary for Large<Vec<T>>
 where
     T: Arbitrary,
 {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        let len = g.next_u32() % (g.size() * 10) as u32;
+    fn arbitrary(g: &mut Gen) -> Self {
+        let len = u32::arbitrary(g) % (g.size() * 10) as u32;
         Large((0..len).map(|_| T::arbitrary(g)).collect())
     }
 
@@ -197,12 +196,12 @@ impl Deref for Alphabet {
 const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
 
 impl Arbitrary for Alphabet {
-    fn arbitrary<G: Gen>(g: &mut G) -> Self {
-        let len = g.next_u32() % g.size() as u32;
+    fn arbitrary(g: &mut Gen) -> Self {
+        let len = u32::arbitrary(g) % g.size() as u32;
         let len = min(len, 16);
         Alphabet(
             (0..len)
-                .map(|_| ALPHABET[g.next_u32() as usize % ALPHABET.len()] as char)
+                .map(|_| ALPHABET[u32::arbitrary(g) as usize % ALPHABET.len()] as char)
                 .collect(),
         )
     }
