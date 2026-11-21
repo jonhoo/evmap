@@ -68,6 +68,15 @@ where
     S: BuildHasher,
     M: Clone,
 {
+
+    /// Create a [`ReadHandleFactory`] which is `Send` & `Sync` and can be shared across threads to
+    /// create additional [`ReadHandle`] instances.
+    pub fn factory(&self) -> ReadHandleFactory<K, V, M, S> {
+        ReadHandleFactory {
+            factory: self.handle.factory()
+        }
+    }
+
     /// Take out a guarded live reference to the read side of the map.
     ///
     /// This lets you perform more complex read operations on the map.
